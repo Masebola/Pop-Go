@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products — Pop &amp; Go</title>
+  <meta name="description" content="Browse Pop & Go popcorn flavours — classic butter, golden caramel, cheesy pop, and sweet & salt. Freshly popped from just R5 a bag." />
+  <meta name="theme-color" content="#d1352b" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="logo-mark">P</span>Pop<span class="brand-go">&amp;Go</span></a>
+        <ul class="nav-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="products.html">Products</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+          <a href="products.html" class="btn btn-primary btn-sm">Order Now</a>
+          <button class="nav-toggle" aria-label="Toggle menu"><span data-icon="menu"></span></button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="container">
+      <div class="page-head">
+        <span class="eyebrow">Our Menu</span>
+        <h1 class="text-balance">Freshly popped flavours</h1>
+        <p class="lead">Quality popcorn, popped in small batches and packed fresh. Pick a favourite below — every bag is made to order for campus.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container">
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem;" id="filters"></div>
+        <div class="grid grid-4" id="products"><!-- injected --></div>
+      </div>
+    </section>
+
+    <section class="container section" style="padding-top:0;">
+      <div class="cta-band">
+        <h2 class="text-balance">Want a bag on campus today?</h2>
+        <p>Catch our daily location on WhatsApp Status, or reach out and we'll let you know where to find us.</p>
+        <a href="contact.html" class="btn btn-gold">Contact us</a>
+      </div>
+    </section>
+  </main>
+
+  <div data-footer></div>
+
+  <script src="/assets/js/store.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script>
+    (function () {
+      var products = PGStore.getActiveProducts();
+      var grid = document.getElementById("products");
+      var filterWrap = document.getElementById("filters");
+
+      var flavours = ["All"].concat(
+        products.map(function (p) { return p.flavour; }).filter(function (v, i, a) { return a.indexOf(v) === i; })
+      );
+
+      function render(filter) {
+        var list = filter === "All" ? products : products.filter(function (p) { return p.flavour === filter; });
+        grid.innerHTML = list
+          .map(function (p) {
+            return (
+              '<article class="product">' +
+              '<div class="product-media"><img src="' + p.image + '" alt="' + p.name + ' popcorn" /></div>' +
+              '<div class="product-body">' +
+              (p.popular ? '<span class="tag">Popular</span>' : "") +
+              "<h3>" + p.name + "</h3>" +
+              '<p>' + p.description + "</p>" +
+              '<div class="product-foot"><span class="price">' + PGUI.money(p.price) + '</span>' +
+              '<button class="btn btn-primary btn-sm" data-add="' + p.id + '">Add to cart</button></div>' +
+              "</div></article>"
+            );
+          })
+          .join("");
+      }
+
+      filterWrap.innerHTML = flavours
+        .map(function (f, i) {
+          return '<button class="btn ' + (i === 0 ? "btn-primary" : "btn-outline") + ' btn-sm" data-filter="' + f + '">' + f + "</button>";
+        })
+        .join("");
+
+      filterWrap.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-filter]");
+        if (!btn) return;
+        filterWrap.querySelectorAll("button").forEach(function (b) {
+          b.className = "btn btn-outline btn-sm";
+        });
+        btn.className = "btn btn-primary btn-sm";
+        render(btn.getAttribute("data-filter"));
+      });
+
+      grid.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-add]");
+        if (!btn) return;
+        var p = PGStore.getProduct(btn.getAttribute("data-add"));
+        PGUI.toast("Added " + p.name + " to your cart (demo)");
+      });
+
+      render("All");
+    })();
+  </script>
+</body>
+</html>

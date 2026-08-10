@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pop &amp; Go — Freshly Popped. Freshly Priced.</title>
+  <meta name="description" content="Pop & Go is a student-owned popcorn business at the University of Venda serving affordable, freshly popped popcorn in tasty flavours." />
+  <meta name="theme-color" content="#d1352b" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="logo-mark">P</span>Pop<span class="brand-go">&amp;Go</span></a>
+        <ul class="nav-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="products.html">Products</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+          <a href="products.html" class="btn btn-primary btn-sm">Order Now</a>
+          <button class="nav-toggle" aria-label="Toggle menu"><span data-icon="menu"></span></button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="container">
+      <div class="hero">
+        <div>
+          <span class="eyebrow">University of Venda</span>
+          <h1 class="text-balance">Freshly Popped. <span class="accent">Freshly Priced.</span></h1>
+          <p class="lead">Pop &amp; Go is a student-run popcorn business serving warm, freshly made popcorn on campus — quality snacks at fair student prices, from just R5 a bag.</p>
+          <div class="hero-cta">
+            <a href="products.html" class="btn btn-primary">Browse Flavours</a>
+            <a href="about.html" class="btn btn-outline">Our Story</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat"><strong>R5</strong><span>Starting price per bag</span></div>
+            <div class="stat"><strong>4+</strong><span>Tasty flavours</span></div>
+            <div class="stat"><strong>32</strong><span>Fresh bags per batch</span></div>
+          </div>
+        </div>
+        <div class="hero-media">
+          <img src="/images/hero-popcorn.png" alt="Freshly popped buttery popcorn spilling from a red and white striped box" />
+          <span class="hero-badge">Popped fresh daily</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Pop & Go -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Why students love us</span>
+          <h2 class="text-balance">A simple snack, done right</h2>
+          <p class="lead">Everything about Pop &amp; Go is built around real campus demand — affordable, quick, and always fresh.</p>
+        </div>
+        <div class="grid grid-3">
+          <article class="feature">
+            <div class="icon" data-icon="zap" data-size="22"></div>
+            <h3>Freshly Popped</h3>
+            <p>Every bag is popped in small batches so your snack is warm, crunchy, and never stale.</p>
+          </article>
+          <article class="feature">
+            <div class="icon" data-icon="tag" data-size="22"></div>
+            <h3>Student Prices</h3>
+            <p>Fair, consistent pricing from just R5 a bag — a quick snack that fits a student budget.</p>
+          </article>
+          <article class="feature">
+            <div class="icon" data-icon="heart" data-size="22"></div>
+            <h3>Made on Campus</h3>
+            <p>Run by six University of Venda students who handle everything from popping to selling.</p>
+          </article>
+          <article class="feature">
+            <div class="icon" data-icon="leaf" data-size="22"></div>
+            <h3>Clean &amp; Hygienic</h3>
+            <p>Prepared with gloves in a clean space, with ingredients from trusted local suppliers.</p>
+          </article>
+          <article class="feature">
+            <div class="icon" data-icon="star" data-size="22"></div>
+            <h3>Tasty Flavours</h3>
+            <p>From classic butter to golden caramel and cheesy pop — there's a flavour for everyone.</p>
+          </article>
+          <article class="feature">
+            <div class="icon" data-icon="pin" data-size="22"></div>
+            <h3>Easy to Find</h3>
+            <p>We post our daily spot on WhatsApp Status so you always know where to grab a bag.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured products -->
+    <section class="section" style="padding-top:0;">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Our menu</span>
+          <h2 class="text-balance">Popular flavours</h2>
+          <p class="lead">Pick your favourite — or try them all.</p>
+        </div>
+        <div class="grid grid-4" id="featured-products"><!-- injected --></div>
+        <div style="text-align:center;margin-top:2rem;">
+          <a href="products.html" class="btn btn-outline">View full menu</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" style="padding-top:0;">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">How it works</span>
+          <h2 class="text-balance">From kernel to snack</h2>
+        </div>
+        <div class="grid grid-4 steps">
+          <div class="step"><h3>Buy</h3><p>We buy quality ingredients in bulk to keep costs low.</p></div>
+          <div class="step"><h3>Prepare</h3><p>Kernels are popped in batches and mixed with flavours.</p></div>
+          <div class="step"><h3>Package</h3><p>Each batch is packed into sealed, ready-to-sell bags.</p></div>
+          <div class="step"><h3>Sell</h3><p>We sell directly to students, staff, and visitors on campus.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="container section" style="padding-top:0;">
+      <div class="cta-band">
+        <h2 class="text-balance">Hungry for a fresh bag?</h2>
+        <p>Check out our flavours and prices, then catch us on campus. Freshly popped and ready to go.</p>
+        <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+          <a href="products.html" class="btn btn-gold">See the menu</a>
+          <a href="contact.html" class="btn btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Get in touch</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div data-footer></div>
+
+  <script src="/assets/js/store.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script>
+    // Render featured products from the store
+    (function () {
+      var wrap = document.getElementById("featured-products");
+      if (!wrap) return;
+      var products = PGStore.getActiveProducts();
+      wrap.innerHTML = products
+        .map(function (p) {
+          return (
+            '<article class="product">' +
+            '<div class="product-media"><img src="' + p.image + '" alt="' + p.name + ' popcorn" /></div>' +
+            '<div class="product-body">' +
+            (p.popular ? '<span class="tag">Popular</span>' : "") +
+            "<h3>" + p.name + "</h3>" +
+            "<p>" + p.description + "</p>" +
+            '<div class="product-foot"><span class="price">' + PGUI.money(p.price) + '</span>' +
+            '<a href="products.html" class="btn btn-primary btn-sm">Order</a></div>' +
+            "</div></article>"
+          );
+        })
+        .join("");
+    })();
+  </script>
+</body>
+</html>

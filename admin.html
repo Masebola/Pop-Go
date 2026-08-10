@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-background">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Pop &amp; Go</title>
+  <meta name="description" content="Pop & Go admin dashboard — manage products, inventory, sales and reports." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="sidebar">
+      <a class="brand" href="index.html">
+        <span class="logo-mark">P</span>
+        <span>Pop<span class="accent">&amp;Go</span></span>
+      </a>
+      <nav class="admin-nav" id="adminNav">
+        <button data-view="overview" class="active"><span data-icon="grid" data-size="18"></span> Overview</button>
+        <button data-view="products"><span data-icon="box" data-size="18"></span> Products</button>
+        <button data-view="inventory"><span data-icon="layers" data-size="18"></span> Inventory</button>
+        <button data-view="sales"><span data-icon="cart" data-size="18"></span> Sales</button>
+        <button data-view="reports"><span data-icon="chart" data-size="18"></span> Reports</button>
+      </nav>
+      <div class="sidebar-foot">
+        Signed in as <br /><strong id="sideUser">Owner</strong><br />
+        <a href="#" id="resetData">Reset demo data</a>
+      </div>
+    </aside>
+    <div class="admin-backdrop" id="backdrop"></div>
+
+    <!-- Main -->
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu"><span data-icon="menu" data-size="20"></span></button>
+          <h1 class="page-title" id="pageTitle">Overview</h1>
+        </div>
+        <div class="topbar-actions">
+          <span class="who">Welcome, <strong id="topUser">Owner</strong></span>
+          <a href="login.html" class="btn btn-outline btn-sm" id="logoutBtn"><span data-icon="logout" data-size="16"></span> Logout</a>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <!-- Overview -->
+        <section class="admin-section active" id="view-overview"></section>
+        <!-- Products -->
+        <section class="admin-section" id="view-products"></section>
+        <!-- Inventory -->
+        <section class="admin-section" id="view-inventory"></section>
+        <!-- Sales -->
+        <section class="admin-section" id="view-sales"></section>
+        <!-- Reports -->
+        <section class="admin-section" id="view-reports"></section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal host -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h3 id="modalTitle">Title</h3>
+        <button class="icon-btn" id="modalClose" aria-label="Close"><span data-icon="close" data-size="16"></span></button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="/assets/js/store.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/admin.js"></script>
+</body>
+</html>
