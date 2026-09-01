@@ -25,7 +25,7 @@
           <li><a href="contact.html">Contact</a></li>
         </ul>
         <div class="nav-actions">
-          <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+          <a href="login.html" class="btn btn-ghost btn-sm">Staff Login</a>
           <a href="products.html" class="btn btn-primary btn-sm">Order Now</a>
           <button class="nav-toggle" aria-label="Toggle menu"><span data-icon="menu"></span></button>
         </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">Our Mission</span>
             <h2 style="font-size:2rem;margin-block:0.75rem;">Affordable snacks, built for campus</h2>
             <p class="lead" style="margin-bottom:1rem;">Pop &amp; Go is a small-scale food retail business — simple, repeatable steps from raw ingredient to finished sale. By keeping production costs low and prices fair, we aim to build a small, sustainable business that covers its own costs and grows over time.</p>
-            <p class="lead">Every bag costs us around R3 to make and sells for R5 — that's close to 40% profit on every single sale, reinvested into better equipment, more stock, and wider reach.</p>
+            <p class="lead">Every bag is priced to comfortably cover what it costs us to make, with a healthy margin reinvested into better equipment, more stock, and wider reach. See our <a href="pricing.html" style="color:var(--red);font-weight:600;">pricing page</a> for what each flavour sells for.</p>
           </div>
         </div>
       </div>
@@ -139,17 +139,18 @@
 
   <div data-footer></div>
 
+  <script src="/assets/js/supabase-client.js"></script>
   <script src="/assets/js/store.js"></script>
   <script src="/assets/js/ui.js"></script>
   <script>
     (function () {
       var team = [
-        { name: "Sikhwivhilu M", role: "Project Manager", num: "22007926" },
-        { name: "Ndanduleni O", role: "Team Member", num: "F21001697" },
-        { name: "Sadiki N", role: "Team Member", num: "H21006569" },
-        { name: "Makhavhu M", role: "Team Member", num: "M21012733" },
-        { name: "Patel P", role: "Team Member", num: "A22001785" },
-        { name: "Mateka R", role: "Team Member", num: "24029831" }
+        { name: "Sikhwivhilu M", role: "Project Manager &amp; Web Developer", num: "22007926" },
+        { name: "Ndanduleni O", role: "Marketing", num: "F21001697" },
+        { name: "Sadiki N", role: "Finance", num: "H21006569" },
+        { name: "Makhavhu M", role: "Ethics &amp; Laws of the Business", num: "M21012733" },
+        { name: "Patel P", role: "Database Management", num: "A22001785" },
+        { name: "Mateka R", role: "Algorithms &amp; Analytics", num: "24029831" }
       ];
       document.getElementById("team").innerHTML = team
         .map(function (m) {

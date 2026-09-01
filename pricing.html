@@ -25,7 +25,7 @@
           <li><a href="contact.html">Contact</a></li>
         </ul>
         <div class="nav-actions">
-          <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+          <a href="login.html" class="btn btn-ghost btn-sm">Staff Login</a>
           <a href="products.html" class="btn btn-primary btn-sm">Order Now</a>
           <button class="nav-toggle" aria-label="Toggle menu"><span data-icon="menu"></span></button>
         </div>
@@ -38,25 +38,12 @@
       <div class="page-head">
         <span class="eyebrow">Pricing</span>
         <h1 class="text-balance">Fair, simple, transparent</h1>
-        <p class="lead">We use cost-plus pricing: we work out the full cost of making one bag, then add a reasonable margin. Every sale covers its true cost and still leaves a healthy profit.</p>
+        <p class="lead">We keep pricing clear and consistent — the same price for every customer, every day. Full cost breakdowns and profit calculations are kept in our internal admin dashboard rather than published here.</p>
       </div>
     </section>
 
-    <!-- Cost per bag breakdown -->
+    <!-- Flavour price cards (price only — no internal cost/margin data) -->
     <section class="section" style="padding-top:1rem;">
-      <div class="container">
-        <div class="pricing-hero">
-          <div class="card"><div class="big">R2.58</div><small>Direct cost / bag</small></div>
-          <div class="card"><div class="big">R0.44</div><small>Indirect cost / bag</small></div>
-          <div class="card"><div class="big">R3.02</div><small>Total cost / bag</small></div>
-          <div class="card" style="border-color:var(--red);"><div class="big">R5.00</div><small>Selling price</small></div>
-        </div>
-        <p class="lead" style="text-align:center;margin:1.5rem auto 0;">This leaves a profit of about <strong>R1.98 per bag</strong> — roughly 40% of the selling price.</p>
-      </div>
-    </section>
-
-    <!-- Flavour price cards -->
-    <section class="section" style="padding-top:0;">
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">Per flavour</span>
@@ -65,87 +52,41 @@
         <div class="grid grid-4" id="price-cards"><!-- injected --></div>
       </div>
     </section>
-
-    <!-- Cost tables -->
-    <section class="section" style="padding-top:0;">
-      <div class="container">
-        <div class="grid grid-2" style="gap:2rem;align-items:start;">
-          <div>
-            <h3 style="margin-bottom:1rem;">Direct costs (ingredients)</h3>
-            <table class="data">
-              <thead><tr><th>Item</th><th>Quantity</th><th class="num">Cost (R)</th></tr></thead>
-              <tbody>
-                <tr><td>Popcorn kernels</td><td>1 kg</td><td class="num">35.98</td></tr>
-                <tr><td>Cooking oil</td><td>2 L</td><td class="num">69.99</td></tr>
-                <tr><td>White sugar</td><td>2.5 kg</td><td class="num">56.99</td></tr>
-                <tr><td>Salt</td><td>500 g</td><td class="num">7.99</td></tr>
-                <tr><td>Seasoning</td><td>200 g</td><td class="num">25.00</td></tr>
-                <tr><td>Popcorn bags</td><td>100 pack</td><td class="num">65.00</td></tr>
-              </tbody>
-              <tfoot><tr><td colspan="2">Total Direct Costs</td><td class="num">260.95</td></tr></tfoot>
-            </table>
-          </div>
-          <div>
-            <h3 style="margin-bottom:1rem;">Monthly operating costs</h3>
-            <table class="data">
-              <thead><tr><th>Item</th><th>Note</th><th class="num">Cost (R)</th></tr></thead>
-              <tbody>
-                <tr><td>Electricity</td><td>Cooking setup</td><td class="num">150.00</td></tr>
-                <tr><td>Mobile data</td><td>Team &amp; marketing</td><td class="num">50.00</td></tr>
-                <tr><td>Transport</td><td>Ingredients &amp; equipment</td><td class="num">30.00</td></tr>
-                <tr><td>Disposable gloves</td><td>Hygiene</td><td class="num">80.00</td></tr>
-              </tbody>
-              <tfoot><tr><td colspan="2">Total Monthly Operating</td><td class="num">310.00</td></tr></tfoot>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Break-even -->
-    <section class="section" style="padding-top:0;">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">The numbers</span>
-          <h2 class="text-balance">Break-even &amp; returns</h2>
-          <p class="lead">Assuming all 32 bags are sold each trading day across 22 trading days a month.</p>
-        </div>
-        <div class="grid grid-4">
-          <div class="card" style="text-align:center;"><div class="big" style="font-family:var(--font-display);font-size:1.8rem;color:var(--red);">128</div><small>Bags to break even / month</small></div>
-          <div class="card" style="text-align:center;"><div class="big" style="font-family:var(--font-display);font-size:1.8rem;color:var(--red);">4 days</div><small>Time to break even</small></div>
-          <div class="card" style="text-align:center;"><div class="big" style="font-family:var(--font-display);font-size:1.8rem;color:var(--red);">R640</div><small>Break-even revenue</small></div>
-          <div class="card" style="text-align:center;"><div class="big" style="font-family:var(--font-display);font-size:1.8rem;color:var(--red);">116.7%</div><small>ROI in month 1</small></div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <div data-footer></div>
 
+  <script src="/assets/js/supabase-client.js"></script>
   <script src="/assets/js/store.js"></script>
   <script src="/assets/js/ui.js"></script>
   <script>
-    (function () {
-      var products = PGStore.getActiveProducts();
-      document.getElementById("price-cards").innerHTML = products
-        .map(function (p, i) {
-          var profit = (p.price - p.cost).toFixed(2);
-          return (
-            '<div class="price-card' + (p.popular ? " featured" : "") + '">' +
-            "<h3>" + p.name + "</h3>" +
-            '<div class="amount">' + PGUI.money(p.price) + "</div>" +
-            '<p style="color:var(--muted);font-size:0.9rem;">per bag</p>' +
-            "<ul>" +
-            '<li><span data-icon="check" data-size="18"></span>Cost to make: ' + PGUI.money(p.cost) + "</li>" +
-            '<li><span data-icon="check" data-size="18"></span>Profit per bag: R' + profit + "</li>" +
-            '<li><span data-icon="check" data-size="18"></span>Freshly popped to order</li>' +
-            "</ul>" +
-            '<a href="products.html" class="btn ' + (p.popular ? "btn-primary" : "btn-outline") + ' btn-block">Order</a>' +
-            "</div>"
-          );
-        })
-        .join("");
-    })();
+    async function loadPricing() {
+      var wrap = document.getElementById("price-cards");
+      wrap.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--muted);">Loading prices…</p>';
+      try {
+        var products = await PGStore.getActiveProducts();
+        wrap.innerHTML = products
+          .map(function (p) {
+            return (
+              '<div class="price-card' + (p.popular ? " featured" : "") + '">' +
+              "<h3>" + p.name + "</h3>" +
+              '<div class="amount">' + PGUI.money(p.price) + "</div>" +
+              '<p style="color:var(--muted);font-size:0.9rem;">per bag</p>' +
+              "<ul>" +
+              '<li><span data-icon="check" data-size="18"></span>' + p.description + "</li>" +
+              '<li><span data-icon="check" data-size="18"></span>Freshly popped to order</li>' +
+              "</ul>" +
+              '<a href="products.html" class="btn ' + (p.popular ? "btn-primary" : "btn-outline") + ' btn-block">Order</a>' +
+              "</div>"
+            );
+          })
+          .join("");
+        PGUI.hydrateIcons(wrap);
+      } catch (err) {
+        PGUI.showError(wrap, err.message || "Could not load prices.", loadPricing);
+      }
+    }
+    loadPricing();
   </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 /* ============================================================
    Pop & Go — Admin Dashboard logic
    Renders Overview / Products / Inventory / Sales / Reports,
-   backed by PGStore (localStorage). No frameworks.
+   backed by PGStore (Supabase). No frameworks.
    ============================================================ */
 
 (function () {
@@ -18,6 +18,7 @@
     inventory: "Inventory",
     sales: "Sales",
     reports: "Reports",
+    pricing: "Pricing calculator",
   };
 
   /* ---------- small helpers ---------- */
@@ -32,22 +33,23 @@
      RENDERERS
      ============================================================ */
 
-  function renderOverview() {
-    const sum = S.summary();
-    const low = S.lowStockItems();
-    const byProduct = S.salesByProduct();
+  async function renderOverview() {
+    el("view-overview").innerHTML = '<div class="empty-state">Loading…</div>';
+    const sum = await S.summary();
+    const low = await S.lowStockItems();
+    const byProduct = await S.salesByProduct();
     const topName = byProduct[0] ? byProduct[0].name : "—";
 
     let html =
       '<div class="stat-grid">' +
-      statCard("money", "Total Revenue", money(sum.revenue), sum.orders + " orders logged") +
+      statCard("money", "Total Revenue", money(sum.revenue), sum.orders + " line items logged") +
       statCard("trending", "Total Profit", money(sum.profit), sum.margin + "% profit margin") +
       statCard("cart", "Bags Sold", sum.bags, "across all flavours") +
       statCard("star", "Top Flavour", topName, byProduct[0] ? byProduct[0].bags + " bags sold" : "no sales yet") +
       "</div>";
 
     // weekly revenue column chart
-    const week = S.salesByDay(7);
+    const week = await S.salesByDay(7);
     const maxRev = Math.max.apply(null, week.map((d) => d.revenue).concat([1]));
     html +=
       '<div class="panel"><div class="panel-head"><h3>This week&rsquo;s revenue</h3>' +
@@ -71,7 +73,7 @@
     html +=
       '<div class="panel"><div class="panel-head"><h3>Low stock alerts</h3>' +
       '<span class="badge ' + (low.length ? "danger" : "ok") + '">' +
-      (low.length ? low.length + " need restock" : "All good") + "</span></div><div class="panel-body">";
+      (low.length ? low.length + " need restock" : "All good") + '</span></div><div class="panel-body">';
     if (!low.length) {
       html += '<div class="empty-state">Everything is well stocked. Nice work!</div>';
     } else {
@@ -86,6 +88,7 @@
     html += "</div></div>";
 
     el("view-overview").innerHTML = html;
+    hydrate(el("view-overview"));
   }
 
   function statCard(icon, label, value, sub) {
@@ -97,12 +100,13 @@
     );
   }
 
-  function renderProducts() {
-    const products = S.getProducts();
+  async function renderProducts() {
+    el("view-products").innerHTML = '<div class="empty-state">Loading…</div>';
+    const products = await S.getProducts();
     let html =
       '<div class="panel"><div class="panel-head"><h3>All products</h3>' +
       '<button class="btn btn-primary btn-sm" id="addProduct"><span data-icon="plus" data-size="16"></span> Add product</button>' +
-      "</div><div class="panel-body"><div class="table-wrap"><table class="data"><thead><tr>" +
+      "</div><div class=\"panel-body\"><div class=\"table-wrap\"><table class=\"data\"><thead><tr>" +
       "<th>Product</th><th>Flavour</th><th>Cost</th><th>Price</th><th>Margin</th><th>Status</th><th></th>" +
       "</tr></thead><tbody>";
 
@@ -128,26 +132,26 @@
     }
     html += "</tbody></table></div></div></div>";
     el("view-products").innerHTML = html;
+    hydrate(el("view-products"));
 
     el("addProduct").addEventListener("click", function () { openProductModal(); });
     el("view-products").querySelectorAll("[data-edit]").forEach(function (b) {
       b.addEventListener("click", function () { openProductModal(b.getAttribute("data-edit")); });
     });
     el("view-products").querySelectorAll("[data-del]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        const p = S.getProduct(b.getAttribute("data-del"));
+      b.addEventListener("click", async function () {
+        const p = await S.getProduct(b.getAttribute("data-del"));
         if (confirm("Delete " + p.name + "?")) {
-          S.deleteProduct(p.id);
+          await S.deleteProduct(p.id);
           toast("Product deleted");
           renderProducts();
-          hydrate(el("view-products"));
         }
       });
     });
   }
 
-  function openProductModal(id) {
-    const p = id ? S.getProduct(id) : { name: "", flavour: "", price: "", cost: "", image: "/images/flavour-butter.png", description: "", active: true, popular: false };
+  async function openProductModal(id) {
+    const p = id ? await S.getProduct(id) : { name: "", flavour: "", price: "", cost: "", image: "/images/flavour-butter.png", description: "", active: true, popular: false };
     const images = [
       ["/images/flavour-butter.png", "Butter"],
       ["/images/flavour-caramel.png", "Caramel"],
@@ -179,10 +183,10 @@
 
     openModal(id ? "Edit product" : "Add product", body);
     el("cancelModal").addEventListener("click", closeModal);
-    el("productForm").addEventListener("submit", function (e) {
+    el("productForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const f = e.target;
-      S.saveProduct({
+      await S.saveProduct({
         id: id || undefined,
         name: f.name.value.trim(),
         flavour: f.flavour.value.trim(),
@@ -196,16 +200,16 @@
       closeModal();
       toast(id ? "Product updated" : "Product added");
       renderProducts();
-      hydrate(el("view-products"));
     });
   }
 
-  function renderInventory() {
-    const inv = S.getInventory();
+  async function renderInventory() {
+    el("view-inventory").innerHTML = '<div class="empty-state">Loading…</div>';
+    const inv = await S.getInventory();
     let html =
       '<div class="panel"><div class="panel-head"><h3>Ingredients &amp; supplies</h3>' +
       '<button class="btn btn-primary btn-sm" id="addItem"><span data-icon="plus" data-size="16"></span> Add item</button>' +
-      "</div><div class="panel-body"><div class="table-wrap"><table class="data"><thead><tr>" +
+      "</div><div class=\"panel-body\"><div class=\"table-wrap\"><table class=\"data\"><thead><tr>" +
       "<th>Item</th><th>In stock</th><th>Min level</th><th>Used / batch</th><th>Status</th><th></th>" +
       "</tr></thead><tbody>";
 
@@ -229,6 +233,7 @@
     });
     html += "</tbody></table></div></div></div>";
     el("view-inventory").innerHTML = html;
+    hydrate(el("view-inventory"));
 
     el("addItem").addEventListener("click", function () { openItemModal(); });
     el("view-inventory").querySelectorAll("[data-restock]").forEach(function (b) {
@@ -238,20 +243,19 @@
       b.addEventListener("click", function () { openItemModal(b.getAttribute("data-edititem")); });
     });
     el("view-inventory").querySelectorAll("[data-delitem]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        const it = S.getInventoryItem(b.getAttribute("data-delitem"));
+      b.addEventListener("click", async function () {
+        const it = await S.getInventoryItem(b.getAttribute("data-delitem"));
         if (confirm("Delete " + it.name + "?")) {
-          S.deleteInventoryItem(it.id);
+          await S.deleteInventoryItem(it.id);
           toast("Item deleted");
           renderInventory();
-          hydrate(el("view-inventory"));
         }
       });
     });
   }
 
-  function openItemModal(id) {
-    const it = id ? S.getInventoryItem(id) : { name: "", unit: "g", stock: "", min: "", perBatch: "", cost: "" };
+  async function openItemModal(id) {
+    const it = id ? await S.getInventoryItem(id) : { name: "", unit: "g", stock: "", min: "", perBatch: "", cost: "" };
     const body =
       '<form class="admin-form" id="itemForm">' +
       '<label>Item name</label><input name="name" required value="' + esc(it.name) + '" placeholder="e.g. Popcorn Kernels" />' +
@@ -270,10 +274,10 @@
       "</div></form>";
     openModal(id ? "Edit item" : "Add inventory item", body);
     el("cancelModal").addEventListener("click", closeModal);
-    el("itemForm").addEventListener("submit", function (e) {
+    el("itemForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const f = e.target;
-      S.saveInventoryItem({
+      await S.saveInventoryItem({
         id: id || undefined,
         name: f.name.value.trim(),
         unit: f.unit.value.trim() || "unit",
@@ -285,12 +289,11 @@
       closeModal();
       toast(id ? "Item updated" : "Item added");
       renderInventory();
-      hydrate(el("view-inventory"));
     });
   }
 
-  function openRestockModal(id) {
-    const it = S.getInventoryItem(id);
+  async function openRestockModal(id) {
+    const it = await S.getInventoryItem(id);
     const body =
       '<form class="admin-form" id="restockForm">' +
       "<p style=\"margin-bottom:1rem;color:var(--muted);\">Current stock: <strong>" + it.stock + " " + esc(it.unit) + "</strong></p>" +
@@ -302,22 +305,22 @@
       "</div></form>";
     openModal("Restock " + it.name, body);
     el("cancelModal").addEventListener("click", closeModal);
-    el("restockForm").addEventListener("submit", function (e) {
+    el("restockForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-      S.restockItem(id, e.target.amount.value);
+      await S.restockItem(id, e.target.amount.value);
       closeModal();
       toast(it.name + " restocked");
       renderInventory();
-      hydrate(el("view-inventory"));
     });
   }
 
-  function renderSales() {
-    const products = S.getActiveProducts();
-    const sales = S.getSales().slice().reverse();
+  async function renderSales() {
+    el("view-sales").innerHTML = '<div class="empty-state">Loading…</div>';
+    const products = await S.getActiveProducts();
+    const sales = (await S.getSales()).slice().reverse();
 
     let html =
-      '<div class="panel"><div class="panel-head"><h3>Record a sale</h3>' +
+      '<div class="panel"><div class="panel-head"><h3>Record a walk-in sale</h3>' +
       '<span class="badge muted">Selling reduces stock automatically</span></div>' +
       '<div class="panel-body"><div class="sell-grid">';
     products.forEach(function (p) {
@@ -351,37 +354,44 @@
           "<td>" + s.qty + "</td>" +
           "<td>" + money(s.total) + "</td>" +
           '<td><span class="badge ok">' + money(s.profit) + "</span></td>" +
-          '<td><button class="icon-btn danger" data-delsale="' + s.id + '" aria-label="Delete"><span data-icon="trash" data-size="16"></span></button></td></tr>';
+          '<td><button class="icon-btn danger" data-delsale="' + s.id + '" aria-label="Cancel order"><span data-icon="trash" data-size="16"></span></button></td></tr>';
       });
     }
     html += "</tbody></table></div></div></div>";
     el("view-sales").innerHTML = html;
+    hydrate(el("view-sales"));
 
     el("view-sales").querySelectorAll("[data-sell]").forEach(function (b) {
-      b.addEventListener("click", function () {
+      b.addEventListener("click", async function () {
         const pid = b.getAttribute("data-sell");
         const qty = parseInt(el("qty-" + pid).value, 10);
         if (!qty || qty < 1) { toast("Enter a valid quantity"); return; }
-        S.recordSale(pid, qty);
-        toast(qty + " bag(s) sold");
-        renderSales();
-        hydrate(el("view-sales"));
+        b.disabled = true;
+        try {
+          await S.recordSale(pid, qty);
+          toast(qty + " bag(s) sold");
+          renderSales();
+        } catch (ex) {
+          toast("Could not record sale: " + (ex.message || ex));
+          b.disabled = false;
+        }
       });
     });
     el("view-sales").querySelectorAll("[data-delsale]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        S.deleteSale(b.getAttribute("data-delsale"));
-        toast("Sale removed");
+      b.addEventListener("click", async function () {
+        if (!confirm("Cancel this order?")) return;
+        await S.deleteSale(b.getAttribute("data-delsale"));
+        toast("Order cancelled");
         renderSales();
-        hydrate(el("view-sales"));
       });
     });
   }
 
-  function renderReports() {
-    const sum = S.summary();
-    const byProduct = S.salesByProduct();
-    const week = S.salesByDay(7);
+  async function renderReports() {
+    el("view-reports").innerHTML = '<div class="empty-state">Loading…</div>';
+    const sum = await S.summary();
+    const byProduct = await S.salesByProduct();
+    const week = await S.salesByDay(7);
     const maxBags = Math.max.apply(null, byProduct.map((r) => r.bags).concat([1]));
 
     let html =
@@ -389,7 +399,7 @@
       statCard("money", "Revenue", money(sum.revenue), "gross sales") +
       statCard("tag", "Cost of goods", money(sum.cost), "ingredients + supplies") +
       statCard("trending", "Net profit", money(sum.profit), sum.margin + "% margin") +
-      statCard("cart", "Avg / order", money(sum.orders ? sum.revenue / sum.orders : 0), sum.orders + " orders") +
+      statCard("cart", "Avg / line item", money(sum.orders ? sum.revenue / sum.orders : 0), sum.orders + " line items") +
       "</div>";
 
     // sales by product
@@ -439,6 +449,94 @@
     html += "</div></div></div>";
 
     el("view-reports").innerHTML = html;
+    hydrate(el("view-reports"));
+  }
+
+  /* ---------- Pricing calculator (cost-plus, matches the Final Report §6 model) ---------- */
+  async function renderPricing() {
+    el("view-pricing").innerHTML = '<div class="empty-state">Loading…</div>';
+    const settings = await S.getSettings();
+    const map = {};
+    settings.forEach((s) => { map[s.key] = s; });
+
+    function num(key, fallback) { return map[key] ? Number(map[key].value) : fallback; }
+
+    const bagsPerBatch = num("bags_per_batch", 32);
+    const batchesPerDay = num("batches_per_trading_day", 1);
+    const tradingDays = num("trading_days_per_month", 22);
+    const electricityMonth = num("electricity_cost_month", 150);
+    const dataMonth = num("mobile_data_cost_month", 50);
+    const transportMonth = num("transport_cost_month", 30);
+    const glovesMonth = num("gloves_cost_month", 80);
+    const startupEquipment = num("startup_equipment_cost_once", 2494.95);
+
+    const bagsPerMonth = bagsPerBatch * batchesPerDay * tradingDays;
+    // Flat monthly overheads only — the popcorn machine itself is a
+    // one-time startup cost (shown separately below), not a recurring
+    // per-batch charge. This matches the Final Report, Section 6.
+    const monthlyIndirect = electricityMonth + dataMonth + transportMonth + glovesMonth;
+    const indirectPerBag = bagsPerMonth ? monthlyIndirect / bagsPerMonth : 0;
+
+    let html =
+      '<div class="panel"><div class="panel-head"><h3>Cost-plus pricing model</h3>' +
+      '<span class="badge muted">Editable — updates live pricing guidance</span></div>' +
+      '<div class="panel-body">' +
+      '<p style="color:var(--muted);margin-bottom:1rem;">Matches the Final Report, Section 6: the popcorn machine is a one-time startup purchase (shown separately below, not spread across bags), and monthly overheads (electricity, data, transport, gloves) are divided across the bags made that month. Each batch makes ' + bagsPerBatch + ' bags.</p>' +
+      '<form class="admin-form" id="settingsForm"><div class="field-row">';
+    settings.filter((s) => s.key !== "startup_equipment_cost_once").forEach((s) => {
+      html += '<div><label>' + esc(s.label) + ' (' + esc(s.unit) + ')</label><input data-key="' + s.key + '" type="number" step="0.01" value="' + s.value + '" /></div>';
+    });
+    html += '</div><button type="submit" class="btn btn-primary btn-sm">Save cost settings</button></form></div></div>';
+
+    html +=
+      '<div class="stat-grid">' +
+      statCard("box", "Bags per batch", bagsPerBatch, batchesPerDay + " batch(es)/day") +
+      statCard("cart", "Bags per month", bagsPerMonth, tradingDays + " trading days") +
+      statCard("money", "Indirect cost / bag", "R" + indirectPerBag.toFixed(2), "monthly overheads ÷ bags per month") +
+      statCard("tag", "Monthly overheads", "R" + monthlyIndirect.toFixed(2), "electricity, data, transport, gloves") +
+      "</div>";
+
+    html +=
+      '<div class="panel"><div class="panel-head"><h3>Startup equipment</h3>' +
+      '<span class="badge muted">One-time — not part of per-bag cost</span></div>' +
+      '<div class="panel-body">' +
+      '<p style="color:var(--muted);">The popcorn machine, utensils, and other one-time equipment ' +
+      '(<strong>R' + startupEquipment.toFixed(2) + '</strong> total, per the Final Report §6.1) is a startup ' +
+      'cost the business recovers over time through overall profit — it deliberately is <em>not</em> divided into the per-bag cost above, since it is not a recurring expense.</p>' +
+      '<div class="admin-form" style="max-width:280px;margin-top:0.75rem;"><label>Startup equipment cost (R, one-time)</label>' +
+      '<input data-key="startup_equipment_cost_once" form="settingsForm" type="number" step="0.01" value="' + startupEquipment + '" /></div>' +
+      '</div></div>';
+
+    // per-product suggested pricing using current ingredient cost (from products table cost_price) + indirect
+    const products = await S.getProducts();
+    html +=
+      '<div class="panel"><div class="panel-head"><h3>Suggested price per flavour</h3></div>' +
+      '<div class="panel-body"><div class="table-wrap"><table class="data"><thead><tr>' +
+      '<th>Flavour</th><th>Ingredient cost</th><th>+ Indirect / bag</th><th>Total cost</th><th>Current price</th><th>Margin</th>' +
+      '</tr></thead><tbody>';
+    products.forEach((p) => {
+      const totalCost = p.cost + indirectPerBag;
+      const margin = p.price ? Math.round(((p.price - totalCost) / p.price) * 100) : 0;
+      html +=
+        '<tr><td>' + esc(p.name) + '</td><td>' + money(p.cost) + '</td><td>' + money(indirectPerBag) +
+        '</td><td>' + money(totalCost) + '</td><td>' + money(p.price) + '</td><td>' + margin + '%</td></tr>';
+    });
+    html += '</tbody></table></div><p style="font-size:0.8rem;color:var(--muted);margin-top:0.75rem;">"Ingredient cost" comes from each product\'s cost field on the Products tab. Update it there if your recipe changes.</p></div></div>';
+
+    el("view-pricing").innerHTML = html;
+    hydrate(el("view-pricing"));
+
+    el("settingsForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      // Query the whole tab, not just the <form>, since the startup-equipment
+      // field lives outside the form and is linked via form="settingsForm".
+      const inputs = el("view-pricing").querySelectorAll("[data-key]");
+      for (const inp of inputs) {
+        await S.saveSetting(inp.getAttribute("data-key"), parseFloat(inp.value) || 0);
+      }
+      toast("Cost settings saved");
+      renderPricing();
+    });
   }
 
   /* ============================================================
@@ -461,6 +559,7 @@
     inventory: renderInventory,
     sales: renderSales,
     reports: renderReports,
+    pricing: renderPricing,
   };
 
   function show(view) {
@@ -470,8 +569,14 @@
       b.classList.toggle("active", b.getAttribute("data-view") === view);
     });
     el("pageTitle").textContent = TITLES[view];
-    RENDERERS[view]();
-    hydrate(el("view-" + view));
+    Promise.resolve(RENDERERS[view]()).catch(function (err) {
+      console.error("[Pop & Go] Failed to load " + view + ":", err);
+      PGUI.showError(
+        el("view-" + view),
+        (err && err.message) || "Could not load this data from Supabase.",
+        function () { show(view); }
+      );
+    });
     // close mobile sidebar
     el("sidebar").classList.remove("open");
     el("backdrop").classList.remove("open");
@@ -481,48 +586,68 @@
   /* ============================================================
      INIT
      ============================================================ */
-  document.addEventListener("DOMContentLoaded", function () {
-    // session (soft gate — redirect to login if none)
-    const session = S.getSession();
-    if (session) {
-      const name = session.name || "Owner";
+  document.addEventListener("DOMContentLoaded", async function () {
+    try {
+      // Auth gate — must be a logged-in admin to see this page.
+      const session = await S.getSession();
+      if (!session) {
+        location.href = "login.html";
+        return;
+      }
+      const isAdmin = await S.isAdmin();
+      if (!isAdmin) {
+        document.body.innerHTML =
+          '<div style="max-width:480px;margin:4rem auto;text-align:center;padding:0 1.5rem;">' +
+          '<h1 style="font-family:var(--font-display);margin-bottom:1rem;">Admins only</h1>' +
+          '<p style="color:var(--muted);margin-bottom:1.5rem;">This account isn\'t marked as an admin yet. Ask an existing admin to run the promotion SQL in INSTRUCTIONS.md, then log in again.</p>' +
+          '<a class="btn btn-primary" href="index.html">Back to site</a></div>';
+        return;
+      }
+
+      const profile = await S.getProfile();
+      const name = (profile && (profile.full_name || profile.email)) || "Owner";
       el("topUser").textContent = name;
       el("sideUser").textContent = name;
-    }
 
-    document.querySelectorAll("#adminNav button").forEach(function (b) {
-      b.addEventListener("click", function () { show(b.getAttribute("data-view")); });
-    });
+      document.querySelectorAll("#adminNav button").forEach(function (b) {
+        b.addEventListener("click", function () { show(b.getAttribute("data-view")); });
+      });
 
-    el("sidebarToggle").addEventListener("click", function () {
-      el("sidebar").classList.toggle("open");
-      el("backdrop").classList.toggle("open");
-    });
-    el("backdrop").addEventListener("click", function () {
-      el("sidebar").classList.remove("open");
-      el("backdrop").classList.remove("open");
-    });
+      el("sidebarToggle").addEventListener("click", function () {
+        el("sidebar").classList.toggle("open");
+        el("backdrop").classList.toggle("open");
+      });
+      el("backdrop").addEventListener("click", function () {
+        el("sidebar").classList.remove("open");
+        el("backdrop").classList.remove("open");
+      });
 
-    el("modalClose").addEventListener("click", closeModal);
-    el("modal").addEventListener("click", function (e) {
-      if (e.target === el("modal")) closeModal();
-    });
+      el("modalClose").addEventListener("click", closeModal);
+      el("modal").addEventListener("click", function (e) {
+        if (e.target === el("modal")) closeModal();
+      });
 
-    el("logoutBtn").addEventListener("click", function () { S.logout(); });
+      el("logoutBtn").addEventListener("click", async function (e) {
+        e.preventDefault();
+        await S.signOut();
+        location.href = "login.html";
+      });
 
-    el("resetData").addEventListener("click", function (e) {
-      e.preventDefault();
-      if (confirm("Reset all demo data to the original seeded figures?")) {
-        S.reset();
-        toast("Demo data reset");
-        show(current());
+      function current() {
+        const h = (location.hash || "#overview").replace("#", "");
+        return RENDERERS[h] ? h : "overview";
       }
-    });
-
-    function current() {
-      const h = (location.hash || "#overview").replace("#", "");
-      return RENDERERS[h] ? h : "overview";
+      show(current());
+    } catch (err) {
+      console.error("[Pop & Go] Admin dashboard failed to start:", err);
+      document.body.innerHTML = "";
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;";
+      wrap.appendChild(PGUI.errorBanner(
+        err.message || "Could not connect to Supabase.",
+        function () { location.reload(); }
+      ));
+      document.body.appendChild(wrap);
     }
-    show(current());
   });
 })();

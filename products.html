@@ -25,7 +25,7 @@
           <li><a href="contact.html">Contact</a></li>
         </ul>
         <div class="nav-actions">
-          <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+          <a href="login.html" class="btn btn-ghost btn-sm">Staff Login</a>
           <a href="products.html" class="btn btn-primary btn-sm">Order Now</a>
           <button class="nav-toggle" aria-label="Toggle menu"><span data-icon="menu"></span></button>
         </div>
@@ -60,13 +60,72 @@
 
   <div data-footer></div>
 
+  <!-- Cart floating button -->
+  <button class="cart-fab" id="cartFab" hidden>
+    <span data-icon="cart" data-size="18"></span> Cart <span class="count" id="cartCount">0</span>
+  </button>
+
+  <!-- Cart modal -->
+  <div class="pg-modal-overlay" id="cartModal">
+    <div class="pg-modal">
+      <div class="pg-modal-head"><h3>Your cart</h3><button class="pg-modal-close" id="cartClose" aria-label="Close">&times;</button></div>
+      <div class="pg-modal-body">
+        <div id="cartLines"></div>
+        <div class="cart-total-row"><span>Total</span><span id="cartTotal">R0.00</span></div>
+        <button class="btn btn-primary btn-block" id="goCheckout" style="margin-top:0.5rem;">Checkout</button>
+        <p style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:0.6rem;">This is a simulated checkout for a student project — no real payment is taken.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout modal -->
+  <div class="pg-modal-overlay" id="checkoutModal">
+    <div class="pg-modal">
+      <div class="pg-modal-head"><h3>Simulated checkout</h3><button class="pg-modal-close" id="checkoutClose" aria-label="Close">&times;</button></div>
+      <div class="pg-modal-body">
+        <form id="checkoutForm">
+          <div class="field"><label for="co-name">Your name</label><input id="co-name" required placeholder="e.g. Thabo Mudau" /></div>
+          <div class="field"><label for="co-email">Email (optional, for your receipt)</label><input id="co-email" type="email" placeholder="you@univen.ac.za" /></div>
+          <div class="receipt-box" id="checkoutSummary"></div>
+          <div class="terms-check">
+            <input type="checkbox" id="co-terms" required />
+            <label for="co-terms">I agree to the <a href="terms.html" target="_blank">Terms &amp; Conditions</a> and understand this is a simulated payment.</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="payBtn">Pay now (simulated)</button>
+          <div class="auth-error" id="checkoutError"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt modal -->
+  <div class="pg-modal-overlay" id="receiptModal">
+    <div class="pg-modal">
+      <div class="pg-modal-head"><h3>Payment successful 🎉</h3><button class="pg-modal-close" id="receiptClose" aria-label="Close">&times;</button></div>
+      <div class="pg-modal-body">
+        <div class="receipt-box" id="receiptBody"></div>
+        <button class="btn btn-primary btn-block" id="receiptDone" style="margin-top:1rem;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/supabase-client.js"></script>
   <script src="/assets/js/store.js"></script>
   <script src="/assets/js/ui.js"></script>
   <script>
-    (function () {
-      var products = PGStore.getActiveProducts();
+    async function initProductsPage() {
       var grid = document.getElementById("products");
       var filterWrap = document.getElementById("filters");
+      var cart = {}; // productId -> qty
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--muted);">Loading flavours…</p>';
+
+      var products;
+      try {
+        products = await PGStore.getActiveProducts();
+      } catch (err) {
+        PGUI.showError(grid, err.message || "Could not load products.", initProductsPage);
+        return;
+      }
 
       var flavours = ["All"].concat(
         products.map(function (p) { return p.flavour; }).filter(function (v, i, a) { return a.indexOf(v) === i; })
@@ -110,12 +169,130 @@
       grid.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-add]");
         if (!btn) return;
-        var p = PGStore.getProduct(btn.getAttribute("data-add"));
-        PGUI.toast("Added " + p.name + " to your cart (demo)");
+        var id = btn.getAttribute("data-add");
+        cart[id] = (cart[id] || 0) + 1;
+        var p = products.find(function (x) { return x.id === id; });
+        PGUI.toast("Added " + p.name + " to your cart");
+        updateCartUI();
       });
 
       render("All");
-    })();
+
+      /* ---------------- Cart UI ---------------- */
+      var cartFab = document.getElementById("cartFab");
+      var cartCount = document.getElementById("cartCount");
+      var cartModal = document.getElementById("cartModal");
+      var cartLines = document.getElementById("cartLines");
+      var cartTotal = document.getElementById("cartTotal");
+
+      function cartItems() {
+        return Object.keys(cart).filter(function (id) { return cart[id] > 0; }).map(function (id) {
+          var p = products.find(function (x) { return x.id === id; });
+          return { id: id, product: p, quantity: cart[id] };
+        });
+      }
+
+      function updateCartUI() {
+        var items = cartItems();
+        var totalQty = items.reduce(function (a, i) { return a + i.quantity; }, 0);
+        var totalR = items.reduce(function (a, i) { return a + i.quantity * i.product.price; }, 0);
+        cartFab.hidden = totalQty === 0;
+        cartCount.textContent = totalQty;
+        cartTotal.textContent = PGUI.money(totalR);
+        cartLines.innerHTML = items.map(function (i) {
+          return (
+            '<div class="cart-line">' +
+            '<img src="' + i.product.image + '" alt="' + i.product.name + '" />' +
+            '<div class="info"><div class="name">' + i.product.name + '</div><div class="price">' + PGUI.money(i.product.price) + ' each</div></div>' +
+            '<div class="qty-controls">' +
+            '<button data-dec="' + i.id + '">&minus;</button><span>' + i.quantity + '</span><button data-inc="' + i.id + '">+</button>' +
+            '</div>' +
+            '<div class="line-total">' + PGUI.money(i.quantity * i.product.price) + '</div>' +
+            '</div>'
+          );
+        }).join("") || '<p style="color:var(--muted);text-align:center;padding:1rem 0;">Your cart is empty.</p>';
+      }
+
+      cartLines.addEventListener("click", function (e) {
+        var inc = e.target.closest("[data-inc]");
+        var dec = e.target.closest("[data-dec]");
+        if (inc) { cart[inc.getAttribute("data-inc")]++; updateCartUI(); }
+        if (dec) {
+          var id = dec.getAttribute("data-dec");
+          cart[id] = Math.max(0, cart[id] - 1);
+          updateCartUI();
+        }
+      });
+
+      cartFab.addEventListener("click", function () { cartModal.classList.add("open"); });
+      document.getElementById("cartClose").addEventListener("click", function () { cartModal.classList.remove("open"); });
+
+      /* ---------------- Checkout ---------------- */
+      var checkoutModal = document.getElementById("checkoutModal");
+      var checkoutSummary = document.getElementById("checkoutSummary");
+      var checkoutError = document.getElementById("checkoutError");
+      var checkoutForm = document.getElementById("checkoutForm");
+
+      document.getElementById("goCheckout").addEventListener("click", function () {
+        var items = cartItems();
+        if (!items.length) { PGUI.toast("Your cart is empty"); return; }
+        checkoutSummary.innerHTML = items.map(function (i) {
+          return '<div class="rline"><span>' + i.quantity + '&times; ' + i.product.name + '</span><span>' + PGUI.money(i.quantity * i.product.price) + '</span></div>';
+        }).join("") + '<div class="rline rtotal"><span>Total</span><span>' + PGUI.money(items.reduce(function (a, i) { return a + i.quantity * i.product.price; }, 0)) + '</span></div>';
+        cartModal.classList.remove("open");
+        checkoutModal.classList.add("open");
+      });
+      document.getElementById("checkoutClose").addEventListener("click", function () { checkoutModal.classList.remove("open"); });
+
+      checkoutForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        checkoutError.classList.remove("show");
+        var items = cartItems().map(function (i) { return { id: i.id, quantity: i.quantity }; });
+        if (!items.length) return;
+        var payBtn = document.getElementById("payBtn");
+        payBtn.disabled = true;
+        payBtn.textContent = "Processing…";
+        try {
+          var result = await PGStore.checkout(items, {
+            name: document.getElementById("co-name").value.trim(),
+            email: document.getElementById("co-email").value.trim(),
+          });
+          checkoutModal.classList.remove("open");
+          showReceipt(result, cartItems());
+          cart = {};
+          updateCartUI();
+          checkoutForm.reset();
+        } catch (err) {
+          checkoutError.textContent = "Payment could not be processed: " + (err.message || err);
+          checkoutError.classList.add("show");
+        } finally {
+          payBtn.disabled = false;
+          payBtn.textContent = "Pay now (simulated)";
+        }
+      });
+
+      /* ---------------- Receipt ---------------- */
+      var receiptModal = document.getElementById("receiptModal");
+      function showReceipt(result, items) {
+        var lines = items.map(function (i) {
+          return '<div class="rline"><span>' + i.quantity + '&times; ' + i.product.name + '</span><span>' + PGUI.money(i.quantity * i.product.price) + '</span></div>';
+        }).join("");
+        document.getElementById("receiptBody").innerHTML =
+          '<div class="rline"><span>Order #</span><span>' + result.order_number + '</span></div>' +
+          '<div class="rline"><span>Reference</span><span>' + result.reference + '</span></div>' +
+          '<div class="rline"><span>Date</span><span>' + new Date(result.paid_at).toLocaleString("en-ZA") + '</span></div>' +
+          '<hr style="border:none;border-top:1px solid var(--border);margin:0.5rem 0;" />' +
+          lines +
+          '<div class="rline rtotal"><span>Total paid</span><span>' + PGUI.money(result.total) + '</span></div>' +
+          '<p style="font-size:0.78rem;color:var(--muted);margin-top:0.75rem;">Simulated payment — no real money was charged. Keep this reference for your records.</p>';
+        receiptModal.classList.add("open");
+      }
+      document.getElementById("receiptClose").addEventListener("click", function () { receiptModal.classList.remove("open"); });
+      document.getElementById("receiptDone").addEventListener("click", function () { receiptModal.classList.remove("open"); });
+
+      updateCartUI();
+    }
+    initProductsPage();
   </script>
 </body>
 </html>

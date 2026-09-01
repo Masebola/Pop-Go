@@ -121,8 +121,8 @@
       '<div class="footer-col"><h4>Support</h4><ul>' +
       '<li><a href="faq.html">FAQ</a></li>' +
       '<li><a href="contact.html">Contact Us</a></li>' +
-      '<li><a href="login.html">Login</a></li>' +
-      '<li><a href="register.html">Register</a></li>' +
+      '<li><a href="terms.html">Terms &amp; Conditions</a></li>' +
+      '<li><a href="login.html">Staff Login</a></li>' +
       "</ul></div>" +
       '<div class="footer-col"><h4>Find Us</h4><ul>' +
       "<li><a>University of Venda</a></li>" +
@@ -149,5 +149,33 @@
     initFaq();
   });
 
-  window.PGUI = { icon, money, toast, hydrateIcons };
+  /* ---------- Connection error banner ----------
+     Used whenever a page's data fetch fails (usually a Supabase
+     connection problem) so the person sees a clear message and a
+     retry button instead of a page that's silently stuck loading. */
+  function errorBanner(message, onRetry) {
+    var box = document.createElement("div");
+    box.style.cssText =
+      "max-width:560px;margin:2.5rem auto;padding:1.25rem 1.5rem;border-radius:var(--radius-sm,10px);" +
+      "background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.3);color:var(--espresso,#2b211c);" +
+      "text-align:center;font-family:var(--font-body,inherit);";
+    box.innerHTML =
+      '<p style="font-weight:600;margin-bottom:0.5rem;color:var(--bad,#c0392b);">Something went wrong loading this page</p>' +
+      '<p style="font-size:0.9rem;color:var(--muted,#7a6f68);margin-bottom:1rem;">' + message + "</p>" +
+      '<button type="button" style="background:var(--red,#d1352b);color:#fff;border:none;border-radius:999px;padding:0.6rem 1.2rem;font-weight:600;cursor:pointer;">Try again</button>';
+    var btn = box.querySelector("button");
+    btn.addEventListener("click", function () {
+      if (onRetry) onRetry();
+      else location.reload();
+    });
+    return box;
+  }
+
+  function showError(container, message, onRetry) {
+    if (!container) return;
+    container.innerHTML = "";
+    container.appendChild(errorBanner(message, onRetry));
+  }
+
+  window.PGUI = { icon, money, toast, hydrateIcons, showError, errorBanner };
 })();

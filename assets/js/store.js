@@ -1,252 +1,264 @@
 /* ============================================================
-   Pop & Go — Data Store (localStorage)
-   Seeds real figures from the business pitch, then persists all
-   admin changes to localStorage. Shared by public + admin pages.
+   Pop & Go — Data Store (Supabase edition)
+   Same idea as the old localStorage version, but every method now
+   talks to Supabase and returns a Promise. Pages must `await` calls,
+   e.g.  const products = await PGStore.getActiveProducts();
    ============================================================ */
 
 (function () {
   "use strict";
 
-  const KEYS = {
-    products: "pg_products",
-    inventory: "pg_inventory",
-    sales: "pg_sales",
-    session: "pg_session",
-    seeded: "pg_seeded_v1",
-  };
-
-  /* ---------- Seed data (from the Pop & Go pitch deck) ---------- */
-  const SEED_PRODUCTS = [
-    {
-      id: "p-butter",
-      name: "Classic Butter",
-      flavour: "Buttery Salted",
-      image: "/images/flavour-butter.png",
-      cost: 3.02,      // total cost / bag
-      price: 5.0,      // selling price / bag
-      active: true,
-      popular: true,
-      description: "Our signature freshly popped popcorn with real butter and a pinch of salt.",
-    },
-    {
-      id: "p-caramel",
-      name: "Golden Caramel",
-      flavour: "Sweet Caramel",
-      image: "/images/flavour-caramel.png",
-      cost: 3.35,
-      price: 6.0,
-      active: true,
-      popular: false,
-      description: "Crunchy popcorn coated in a glossy homemade caramel glaze.",
-    },
-    {
-      id: "p-cheese",
-      name: "Cheesy Pop",
-      flavour: "Cheese",
-      image: "/images/flavour-cheese.png",
-      cost: 3.4,
-      price: 6.0,
-      active: true,
-      popular: false,
-      description: "Savoury cheese-seasoned popcorn for the salty snack lovers.",
-    },
-    {
-      id: "p-sweetsalt",
-      name: "Sweet & Salt",
-      flavour: "Sweet & Salted",
-      image: "/images/flavour-sweet-salt.png",
-      cost: 3.1,
-      price: 5.5,
-      active: true,
-      popular: false,
-      description: "The best of both worlds — a sweet and salty flavour combo.",
-    },
-  ];
-
-  // Ingredient inventory based on the pitch's direct-cost purchases.
-  const SEED_INVENTORY = [
-    { id: "i-kernels", name: "Popcorn Kernels", unit: "g", stock: 1000, min: 500, perBatch: 1000, cost: 35.98 },
-    { id: "i-oil", name: "Cooking Oil", unit: "ml", stock: 2000, min: 400, perBatch: 160, cost: 69.99 },
-    { id: "i-sugar", name: "White Sugar", unit: "g", stock: 2500, min: 600, perBatch: 400, cost: 56.99 },
-    { id: "i-salt", name: "Salt", unit: "g", stock: 500, min: 120, perBatch: 60, cost: 7.99 },
-    { id: "i-seasoning", name: "Seasoning", unit: "g", stock: 200, min: 100, perBatch: 80, cost: 25.0 },
-    { id: "i-bags", name: "Popcorn Bags", unit: "bags", stock: 100, min: 40, perBatch: 32, cost: 65.0 },
-  ];
-
-  // A little history so reports/charts aren't empty on first load.
-  function seedSales() {
-    const sales = [];
-    const today = new Date();
-    const sample = [
-      { pid: "p-butter", qty: 18 },
-      { pid: "p-caramel", qty: 6 },
-      { pid: "p-cheese", qty: 5 },
-      { pid: "p-sweetsalt", qty: 8 },
-    ];
-    for (let d = 6; d >= 0; d--) {
-      const day = new Date(today);
-      day.setDate(today.getDate() - d);
-      sample.forEach((s, idx) => {
-        // vary quantities a bit per day
-        const qty = Math.max(1, s.qty - (d % 3) + (idx % 2));
-        const product = SEED_PRODUCTS.find((p) => p.id === s.pid);
-        sales.push({
-          id: "s-" + day.getTime() + "-" + idx,
-          productId: product.id,
-          productName: product.name,
-          qty: qty,
-          unitPrice: product.price,
-          unitCost: product.cost,
-          total: +(qty * product.price).toFixed(2),
-          profit: +(qty * (product.price - product.cost)).toFixed(2),
-          date: day.toISOString(),
-        });
-      });
-    }
-    return sales;
+  async function client() {
+    return window.sbReady;
   }
 
-  /* ---------- Generic persistence helpers ---------- */
-  function read(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) {
-      console.log("[v0] store read error", key, e.message);
-      return fallback;
-    }
-  }
-  function write(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-
-  function ensureSeeded() {
-    if (!localStorage.getItem(KEYS.seeded)) {
-      write(KEYS.products, SEED_PRODUCTS);
-      write(KEYS.inventory, SEED_INVENTORY);
-      write(KEYS.sales, seedSales());
-      localStorage.setItem(KEYS.seeded, "1");
-    }
+  function mapProduct(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      flavour: row.flavour,
+      description: row.description,
+      image: row.image_url,
+      cost: Number(row.cost_price),
+      price: Number(row.sell_price),
+      active: row.active,
+      popular: row.popular,
+    };
   }
 
-  function uid(prefix) {
-    return prefix + "-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+  function mapInventory(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      unit: row.unit,
+      stock: Number(row.stock),
+      min: Number(row.min_level),
+      perBatch: Number(row.per_batch),
+      cost: Number(row.purchase_cost),
+    };
   }
 
-  /* ---------- Public API ---------- */
   const Store = {
-    KEYS,
-
-    reset() {
-      Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
-      ensureSeeded();
-    },
-
-    /* Products */
-    getProducts() {
-      ensureSeeded();
-      return read(KEYS.products, []);
-    },
-    getActiveProducts() {
-      return this.getProducts().filter((p) => p.active);
-    },
-    getProduct(id) {
-      return this.getProducts().find((p) => p.id === id);
-    },
-    saveProduct(product) {
-      const products = this.getProducts();
-      if (product.id) {
-        const i = products.findIndex((p) => p.id === product.id);
-        if (i > -1) products[i] = { ...products[i], ...product };
-      } else {
-        product.id = uid("p");
-        products.push(product);
-      }
-      write(KEYS.products, products);
-      return product;
-    },
-    deleteProduct(id) {
-      write(KEYS.products, this.getProducts().filter((p) => p.id !== id));
-    },
-
-    /* Inventory */
-    getInventory() {
-      ensureSeeded();
-      return read(KEYS.inventory, []);
-    },
-    getInventoryItem(id) {
-      return this.getInventory().find((i) => i.id === id);
-    },
-    saveInventoryItem(item) {
-      const inv = this.getInventory();
-      if (item.id && inv.some((i) => i.id === item.id)) {
-        const idx = inv.findIndex((i) => i.id === item.id);
-        inv[idx] = { ...inv[idx], ...item };
-      } else {
-        item.id = item.id || uid("i");
-        inv.push(item);
-      }
-      write(KEYS.inventory, inv);
-      return item;
-    },
-    deleteInventoryItem(id) {
-      write(KEYS.inventory, this.getInventory().filter((i) => i.id !== id));
-    },
-    restockItem(id, amount) {
-      const inv = this.getInventory();
-      const item = inv.find((i) => i.id === id);
-      if (item) {
-        item.stock += Number(amount) || 0;
-        write(KEYS.inventory, inv);
-      }
-      return item;
-    },
-    lowStockItems() {
-      return this.getInventory().filter((i) => i.stock <= i.min);
-    },
-
-    /* Sales */
-    getSales() {
-      ensureSeeded();
-      return read(KEYS.sales, []);
-    },
-    recordSale(productId, qty) {
-      const product = this.getProduct(productId);
-      if (!product) return null;
-      qty = Number(qty);
-      const sale = {
-        id: uid("s"),
-        productId: product.id,
-        productName: product.name,
-        qty: qty,
-        unitPrice: product.price,
-        unitCost: product.cost,
-        total: +(qty * product.price).toFixed(2),
-        profit: +(qty * (product.price - product.cost)).toFixed(2),
-        date: new Date().toISOString(),
-      };
-      const sales = this.getSales();
-      sales.push(sale);
-      write(KEYS.sales, sales);
-
-      // Inventory Update Algorithm: deduct one batch worth of ingredients
-      // proportional to bags sold (batch = 32 bags per pitch).
-      const inv = this.getInventory();
-      const batchFraction = qty / 32;
-      inv.forEach((i) => {
-        i.stock = Math.max(0, +(i.stock - i.perBatch * batchFraction).toFixed(2));
+    /* ---------------- Auth ---------------- */
+    async signUp(email, password, fullName) {
+      const sb = await client();
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName || "" } },
       });
-      write(KEYS.inventory, inv);
-
-      return sale;
+      if (error) throw error;
+      return data;
     },
-    deleteSale(id) {
-      write(KEYS.sales, this.getSales().filter((s) => s.id !== id));
+    async signIn(email, password) {
+      const sb = await client();
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return data;
+    },
+    async signOut() {
+      const sb = await client();
+      await sb.auth.signOut();
+    },
+    async getSession() {
+      const sb = await client();
+      const { data } = await sb.auth.getSession();
+      return data.session;
+    },
+    async getProfile() {
+      const sb = await client();
+      const session = await this.getSession();
+      if (!session) return null;
+      const { data, error } = await sb.from("profiles").select("*").eq("id", session.user.id).single();
+      if (error) return null;
+      return data;
+    },
+    async isAdmin() {
+      const profile = await this.getProfile();
+      return !!profile && profile.role === "admin";
     },
 
-    /* Reports / analytics */
-    summary() {
-      const sales = this.getSales();
+    /* ---------------- Products ---------------- */
+    async getProducts() {
+      const sb = await client();
+      const { data, error } = await sb.from("products").select("*").order("created_at");
+      if (error) { console.error(error); return []; }
+      return data.map(mapProduct);
+    },
+    async getActiveProducts() {
+      const sb = await client();
+      const { data, error } = await sb.from("products").select("*").eq("active", true).order("created_at");
+      if (error) { console.error(error); return []; }
+      return data.map(mapProduct);
+    },
+    async getProduct(id) {
+      const sb = await client();
+      const { data, error } = await sb.from("products").select("*").eq("id", id).single();
+      if (error) return null;
+      return mapProduct(data);
+    },
+    async saveProduct(product) {
+      const sb = await client();
+      const row = {
+        name: product.name,
+        flavour: product.flavour,
+        description: product.description,
+        image_url: product.image,
+        cost_price: product.cost,
+        sell_price: product.price,
+        active: !!product.active,
+        popular: !!product.popular,
+        updated_at: new Date().toISOString(),
+      };
+      if (product.id) {
+        const { error } = await sb.from("products").update(row).eq("id", product.id);
+        if (error) throw error;
+        return { ...product };
+      }
+      const { data, error } = await sb.from("products").insert(row).select().single();
+      if (error) throw error;
+      return mapProduct(data);
+    },
+    async deleteProduct(id) {
+      const sb = await client();
+      const { error } = await sb.from("products").delete().eq("id", id);
+      if (error) throw error;
+    },
+
+    /* ---------------- Inventory ---------------- */
+    async getInventory() {
+      const sb = await client();
+      const { data, error } = await sb.from("inventory_items").select("*").order("name");
+      if (error) { console.error(error); return []; }
+      return data.map(mapInventory);
+    },
+    async getInventoryItem(id) {
+      const sb = await client();
+      const { data, error } = await sb.from("inventory_items").select("*").eq("id", id).single();
+      if (error) return null;
+      return mapInventory(data);
+    },
+    async saveInventoryItem(item) {
+      const sb = await client();
+      const row = {
+        name: item.name,
+        unit: item.unit,
+        stock: item.stock,
+        min_level: item.min,
+        per_batch: item.perBatch,
+        purchase_cost: item.cost,
+        updated_at: new Date().toISOString(),
+      };
+      if (item.id) {
+        const { error } = await sb.from("inventory_items").update(row).eq("id", item.id);
+        if (error) throw error;
+        return item;
+      }
+      const { data, error } = await sb.from("inventory_items").insert(row).select().single();
+      if (error) throw error;
+      return mapInventory(data);
+    },
+    async deleteInventoryItem(id) {
+      const sb = await client();
+      const { error } = await sb.from("inventory_items").delete().eq("id", id);
+      if (error) throw error;
+    },
+    async restockItem(id, amount) {
+      const sb = await client();
+      const item = await this.getInventoryItem(id);
+      if (!item) return null;
+      const newStock = item.stock + (Number(amount) || 0);
+      const { error } = await sb.from("inventory_items").update({ stock: newStock, updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw error;
+      return { ...item, stock: newStock };
+    },
+    async lowStockItems() {
+      const inv = await this.getInventory();
+      return inv.filter((i) => i.stock <= i.min);
+    },
+
+    /* ---------------- Business settings (admin pricing inputs) ---------------- */
+    async getSettings() {
+      const sb = await client();
+      const { data, error } = await sb.from("business_settings").select("*").order("key");
+      if (error) { console.error(error); return []; }
+      return data;
+    },
+    async saveSetting(key, value) {
+      const sb = await client();
+      const { error } = await sb.from("business_settings").update({ value, updated_at: new Date().toISOString() }).eq("key", key);
+      if (error) throw error;
+    },
+
+    /* ---------------- Checkout / simulated payment ---------------- */
+    // items: [{ id, quantity }]  (product id + qty from the cart)
+    async checkout(items, customer) {
+      const sb = await client();
+      customer = customer || {};
+      const session = await this.getSession();
+      const payload = {
+        p_items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
+        p_customer_name: customer.name || "Guest",
+        p_customer_email: customer.email || null,
+        p_customer_id: session ? session.user.id : null,
+      };
+      const { data, error } = await sb.rpc("record_sale", payload);
+      if (error) throw error;
+      return data; // { order_id, order_number, total, reference, paid_at }
+    },
+    // Used by the admin "Record a sale" quick-sell panel — same RPC.
+    async recordSale(productId, qty) {
+      const result = await this.checkout([{ id: productId, quantity: Number(qty) }], { name: "Walk-in (Admin)" });
+      return result;
+    },
+
+    /* ---------------- Orders / sales history & reports ---------------- */
+    async getOrders() {
+      const sb = await client();
+      const { data, error } = await sb
+        .from("orders")
+        .select("*, order_items(*)")
+        .order("created_at", { ascending: false });
+      if (error) { console.error(error); return []; }
+      return data;
+    },
+    // Flattened list of every order_item (mirrors the old "sales" rows)
+    async getSales() {
+      const orders = await this.getOrders();
+      const rows = [];
+      orders
+        .filter((o) => o.status === "paid" || o.status === "fulfilled")
+        .forEach((o) => {
+          (o.order_items || []).forEach((it) => {
+            rows.push({
+              id: it.id,
+              productId: it.product_id,
+              productName: it.product_name,
+              qty: it.quantity,
+              unitPrice: Number(it.unit_price),
+              unitCost: Number(it.unit_cost),
+              total: Number(it.line_total),
+              profit: +(Number(it.line_total) - Number(it.unit_cost) * it.quantity).toFixed(2),
+              date: o.created_at,
+              orderId: o.id,
+              orderNumber: o.order_number,
+            });
+          });
+        });
+      return rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+    },
+    async deleteSale(orderItemId) {
+      const sb = await client();
+      // Admin-only cleanup: cancel the whole parent order (keeps ledger consistent)
+      const { data: item } = await sb.from("order_items").select("order_id").eq("id", orderItemId).single();
+      if (item) {
+        await sb.from("orders").update({ status: "cancelled" }).eq("id", item.order_id);
+      }
+    },
+    async summary() {
+      const sales = await this.getSales();
       const revenue = sales.reduce((a, s) => a + s.total, 0);
       const profit = sales.reduce((a, s) => a + s.profit, 0);
       const bags = sales.reduce((a, s) => a + s.qty, 0);
@@ -259,9 +271,9 @@
         margin: revenue ? Math.round((profit / revenue) * 100) : 0,
       };
     },
-    salesByDay(days) {
+    async salesByDay(days) {
       days = days || 7;
-      const sales = this.getSales();
+      const sales = await this.getSales();
       const out = [];
       const today = new Date();
       for (let d = days - 1; d >= 0; d--) {
@@ -279,8 +291,8 @@
       }
       return out;
     },
-    salesByProduct() {
-      const sales = this.getSales();
+    async salesByProduct() {
+      const sales = await this.getSales();
       const map = {};
       sales.forEach((s) => {
         if (!map[s.productId]) map[s.productId] = { name: s.productName, bags: 0, revenue: 0, profit: 0 };
@@ -291,19 +303,6 @@
       return Object.values(map)
         .map((r) => ({ ...r, revenue: +r.revenue.toFixed(2), profit: +r.profit.toFixed(2) }))
         .sort((a, b) => b.bags - a.bags);
-    },
-
-    /* Auth (placeholder session, not real security) */
-    login(email) {
-      const session = { email: email, name: email.split("@")[0], at: Date.now() };
-      write(KEYS.session, session);
-      return session;
-    },
-    getSession() {
-      return read(KEYS.session, null);
-    },
-    logout() {
-      localStorage.removeItem(KEYS.session);
     },
   };
 

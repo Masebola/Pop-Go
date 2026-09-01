@@ -787,3 +787,114 @@ table.admin-table td.num, table.admin-table th.num { text-align: right; font-var
   .cta-band { padding: 2rem 1.25rem; }
   table.admin-table th, table.admin-table td { padding: 0.7rem 1rem; }
 }
+
+/* ============================================================
+   Cart & Checkout (added for Supabase / simulated payments)
+   ============================================================ */
+.cart-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1.25rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.cart-fab .count {
+  background: #fff;
+  color: var(--red);
+  border-radius: 999px;
+  min-width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.78rem;
+  padding: 0 5px;
+}
+.cart-fab[hidden] { display: none; }
+
+.pg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 33, 28, 0.55);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  z-index: 200;
+}
+.pg-modal-overlay.open { display: flex; }
+.pg-modal {
+  background: var(--cream);
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.25);
+}
+@media (min-width: 640px) {
+  .pg-modal-overlay { align-items: center; padding: 1rem; }
+  .pg-modal { border-radius: var(--radius); max-height: 90vh; }
+}
+.pg-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--cream);
+}
+.pg-modal-head h3 { font-family: var(--font-display); font-size: 1.2rem; color: var(--espresso); }
+.pg-modal-close {
+  background: transparent; border: none; font-size: 1.4rem; line-height: 1;
+  cursor: pointer; color: var(--muted);
+}
+.pg-modal-body { padding: 1.25rem; }
+
+.cart-line {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0; border-bottom: 1px solid var(--border);
+}
+.cart-line img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+.cart-line .info { flex: 1; }
+.cart-line .info .name { font-weight: 600; color: var(--espresso); font-size: 0.92rem; }
+.cart-line .info .price { color: var(--muted); font-size: 0.82rem; }
+.cart-line .qty-controls { display: flex; align-items: center; gap: 0.4rem; }
+.cart-line .qty-controls button {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--cream-2); cursor: pointer; font-size: 1rem; color: var(--espresso);
+}
+.cart-line .line-total { min-width: 56px; text-align: right; font-weight: 600; color: var(--espresso); font-size: 0.9rem; }
+
+.cart-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 0 0.5rem; font-family: var(--font-display); font-size: 1.15rem; color: var(--espresso);
+}
+.terms-check { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.85rem; color: var(--muted); margin: 1rem 0; }
+.terms-check input { margin-top: 0.2rem; width: auto; }
+.terms-check a { color: var(--red); }
+
+.receipt-box {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  background: #fff;
+}
+.receipt-box .rline { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 0.25rem 0; }
+.receipt-box .rtotal { border-top: 1px solid var(--border); margin-top: 0.5rem; padding-top: 0.6rem; font-weight: 700; }
+
+.auth-error { background: rgba(192,57,43,0.12); color: var(--bad); padding: 0.7rem 0.9rem; border-radius: 10px; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+.auth-error.show { display: block; }
