@@ -116,7 +116,6 @@
       '<li><a href="index.html">Home</a></li>' +
       '<li><a href="about.html">About Us</a></li>' +
       '<li><a href="products.html">Products</a></li>' +
-      '<li><a href="pricing.html">Pricing</a></li>' +
       "</ul></div>" +
       '<div class="footer-col"><h4>Support</h4><ul>' +
       '<li><a href="faq.html">FAQ</a></li>' +
@@ -127,7 +126,7 @@
       '<div class="footer-col"><h4>Find Us</h4><ul>' +
       "<li><a>University of Venda</a></li>" +
       "<li><a>Thohoyandou Campus</a></li>" +
-      '<li><a href="mailto:hello@popandgo.co.za">hello@popandgo.co.za</a></li>' +
+      '<li><a href="mailto:sikhwivhilumasebola@gmail.com">sikhwivhilumasebola@gmail.com</a></li>' +
       "</ul></div>" +
       "</div>" +
       '<div class="footer-bottom">&copy; ' + new Date().getFullYear() +
